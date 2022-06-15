@@ -5,5 +5,5 @@ Discord bot for tracking school timetables
 
 ## TODO
 
-1. setup db (mongodb or sqlite)
-2. allow users to submit ics calendar export
+- [X] setup db (sqlite)
+- [ ] allow users to submit ics calendar export from ACORN

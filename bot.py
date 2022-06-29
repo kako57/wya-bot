@@ -6,9 +6,19 @@ from typing import Dict
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from timetables import timetables
+from sqlalchemy import sessionmaker, create_engine
 
 load_dotenv()
+
+db_path = os.getenv('DB_PATH')
+if db_path is None or db_path == '':
+  db_path = 'sqlite:///:memory:'
+
+engine = create_engine(db_path, echo=True)
+
+# Session class for database access
+Session = sessionmaker(bind=engine)
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='!')
@@ -53,7 +63,7 @@ async def wya(ctx, person_name, day=None):
       day = cur_weekday()
 
   response += f"Looking for {person_name}'s timetable for {days[day] if day != cur_weekday() else f'today ({days[day]})'}:\n"
-    
+
   normalized_name = person_name.lower()
   if normalized_name not in timetables:
     msg = f'{person_name} was not found in the timetable database\n'

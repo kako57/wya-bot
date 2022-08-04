@@ -130,3 +130,6 @@ dmypy.json
 
 # database files
 *.db
+
+# iCalendar files for testing
+*.ics

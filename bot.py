@@ -2,17 +2,21 @@
 
 import os
 import datetime
-from typing import Dict
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from sqlalchemy import sessionmaker, create_engine
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from models import User
 
 load_dotenv()
 
 db_path = os.getenv('DB_PATH')
 if db_path is None or db_path == '':
   db_path = 'sqlite:///:memory:'
+else:
+  db_path = f'sqlite:///{db_path}'
 
 engine = create_engine(db_path, echo=True)
 
@@ -29,15 +33,44 @@ def cur_weekday():
 def cur_time():
   return datetime.datetime.now().strftime("%H:%M")
 
-def unpack(d: Dict, *keys):
-  return tuple(d[k] for k in keys)
-
-def cap(s: str):
+def capitalize(s: str):
   if len(s) < 1:
     return ''
   if len(s) > 1:
     return s[0].upper() + s[1:]
   return s.upper()
+
+@bot.command(name='register', help="Register yourself.\nYou can pass a `preferred_name`", pass_context=True)
+async def register(ctx, preferred_name=None):
+  session = Session()
+  response = ""
+  if preferred_name is None:
+    preferred_name = ctx.message.author.display_name
+  print(f'registering user id {ctx.message.author.id} with name {preferred_name}')
+  try:
+    session.add(User(name=preferred_name, discord_id=ctx.message.author.id))
+    session.commit()
+    response += f"<@{ctx.message.author.id}> has been registered as {preferred_name}\n"
+  except:
+    response += f"There was a problem registering you. Are you already registered?\n"
+
+  session.close()
+
+  await ctx.send(response)
+
+
+@bot.command(name='rename', help="Change your preferred name to new_name")
+async def rename(ctx, new_name):
+  response = ""
+  if new_name is None or not isinstance(new_name, str):
+    response += "new_name not provided"
+    await ctx.send(response)
+    return
+  session = Session()
+  print(f'registering user id {ctx.message.author.id} with name {new_name}')
+  session.add(User(name=new_name, discord_id=ctx.message.author.id))
+  session.close()
+  await ctx.send(response)
 
 @bot.command(name='wya', help="Slaps `person_name`'s timetable in chat")
 async def wya(ctx, person_name, day=None):
@@ -62,19 +95,7 @@ async def wya(ctx, person_name, day=None):
       response += 'WARNING: Cannot parse day. Bot will use the day today instead.\n'
       day = cur_weekday()
 
-  response += f"Looking for {person_name}'s timetable for {days[day] if day != cur_weekday() else f'today ({days[day]})'}:\n"
-
-  normalized_name = person_name.lower()
-  if normalized_name not in timetables:
-    msg = f'{person_name} was not found in the timetable database\n'
-    response += msg
-  else:
-    for section in timetables[normalized_name][day]:
-      title, start_time, end_time, location = unpack(section, 'title', 'startTime', 'endTime', 'location')
-      # section_row = f'{title.ljust(20)} from {start_time.ljust(5)} to {end_time.ljust(5)} @ {location.ljust(7)}\n'
-      section_row = f'{title} from {start_time} to {end_time} @ {location}\n'
-      # print(section_row)
-      response += section_row
+  response += f"Looking for {person_name}'s timetable for {capitalize(days[day]) if day != cur_weekday() else f'today ({capitalize(days[day])})'}:\n"
 
   await ctx.send(response)
 

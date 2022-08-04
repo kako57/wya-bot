@@ -7,8 +7,8 @@ class User(Base):
   __tablename__ = 'users'
   id = Column(Integer, primary_key=True)
   name = Column(String(50), nullable=False)
-  discord_id = Column(String(50), nullable=False)
-  sections = relationship('Sections', backref='user')
+  discord_id = Column(Integer, nullable=False, unique=True)
+  sections = relationship('Section', back_populates='user')
   def __repr__(self) -> str:
     return super().__repr__() + f'User(name={self.name!r}, discord_id={self.discord_id!r})'
 
@@ -20,5 +20,6 @@ class Section(Base):
   end_time = Column(String(50), nullable=False)
   location = Column(String(50), nullable=False)
   user_id = Column(Integer, ForeignKey('users.id'))
+  user = relationship('User', back_populates='sections')
   def __repr__(self) -> str:
     return super().__repr__() + f'Section(title={self.title!r}, start_time={self.start_time!r}, end_time={self.end_time!r}, location={self.location!r})'
